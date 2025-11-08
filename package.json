@@ -1,0 +1,13 @@
+{
+  "name": "maxbot",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node bot.js"
+  },
+  "dependencies": {
+    "@maxhub/max-bot-api": "^0.2.1",
+    "dotenv": "^17.2.3",
+    "sql.js": "^1.13.0"
+  }
+}

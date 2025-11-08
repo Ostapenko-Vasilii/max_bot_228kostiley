@@ -1,0 +1,52 @@
+# Node modules
+node_modules/
+
+# Environment
+.env
+.env.*.local
+.env.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+data.sqlite
+
+# Build / coverage
+dist/
+build/
+out/
+coverage/
+.nyc_output/
+coverage-final.json
+
+
+# Caches
+.cache/
+.parcel-cache/
+.eslintcache
+.tmp/
+node_repl_history
+.pnp.*
+
+# Frameworks / tools
+.next/
+.nuxt/
+storybook-static/
+
+# OS / editor
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Misc
+*.tgz
+*.log.*
+*.pem
+*.key
+*.crt
