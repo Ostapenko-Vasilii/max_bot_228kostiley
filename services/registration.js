@@ -2,6 +2,7 @@ import { Keyboard } from '@maxhub/max-bot-api';
 import { saveUser } from '../db/users.js';
 import { addUserRoles } from '../db/roles.js';
 import { startBot } from '../services/start.js';
+import { addUserState } from '../db/states.js';
 
 
 
@@ -26,12 +27,14 @@ export async function registerUser(bot, ctx) {
     step: 0,
     data: {}
   };
-
+  
   await askNextQuestion(ctx, user_id, bot);
+  await addUserState(user_id, 'registering');
 }
 
 // Вопрос пользователю в зависимости от шага
 async function askNextQuestion(ctx, user_id, bot) {
+  try {
   const step = registrationSteps[userSessions[user_id].step];
 
   switch (step) {
@@ -61,6 +64,10 @@ async function askNextQuestion(ctx, user_id, bot) {
       });
       break;
   }
+} catch (error) {
+  console.error('Error in askNextQuestion:', error);
+  ctx.reply('Пожалуйста, попробуйте заново пройти регистрацию, пропишите /start');
+}
 }
 
 // Обработка текстовых ответов
@@ -88,6 +95,7 @@ export async function handleUserResponse(ctx, bot) {
     }
     await askNextQuestion(ctx, user_id, bot);
   } else {
+    if (session.step < 5) return;
     await finishRegistration(ctx, user_id);
   }
 }
@@ -96,16 +104,15 @@ export async function handleUserResponse(ctx, bot) {
 export async function handlePolicyResponse(bot, ctx) {
   const user_id = ctx.user.user_id;
   const session = userSessions[user_id];
-  if (!session) return;
-
-  const stepKey = registrationSteps[session.step];
-  if (stepKey !== 'policy_agreed') return;
+  if (!session ) return;
+  if (session.step < 5) return;
   session.data.policy_agreed = true;
   await finishRegistration(bot, ctx, user_id);
 }
 
 // Завершение регистрации
 async function finishRegistration(bot, ctx, user_id) {
+  if (!userSessions[user_id]) return;
   const data = userSessions[user_id].data;
 
   await saveUser(
@@ -124,6 +131,7 @@ async function finishRegistration(bot, ctx, user_id) {
   }
   await ctx.reply(`✅ Регистрация завершена! Спасибо, ${data.first_name}.`);
   delete userSessions[user_id]; // очищаем состояние
+  await addUserState(user_id, null);
   startBot(bot, ctx);
 }
 
@@ -144,7 +152,7 @@ function validateInput(step, value) {
       return /^\d+$/.test(value) && +value >= 1 && +value <= 600;
 
     default:
-      return true;
+      return false;
   }
 }
 

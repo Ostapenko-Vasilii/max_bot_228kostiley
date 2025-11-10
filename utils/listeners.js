@@ -3,6 +3,7 @@ import { handlePolicyResponse } from '../services/registration.js';
 import { userButtons, headmanButtons, adminButtons, responsibleButtons, supervisorButtons, foremanButtons } from '../services/menu.js';
 import { showAdminPanel, adminPanelButtons } from '../services/admin-panel/admin-panel.js';
 import { startBot } from '../services/start.js';
+import { startCreateEvent } from '../services/admin-panel/create-event.js';
 
 
 export async function setListeners(bot, startBotMs) {
@@ -66,7 +67,7 @@ async function setAdminPanelListener(bot, startBotMs) {
             if (!isNewMessage(startBotMs, upTs)) return;
             switch (button.payload.command) {
                 case 'admin_panel_create_event':
-                    await showAdminPanel(ctx, bot);
+                    await startCreateEvent(ctx);
                     return;
                 default:
                     await ctx.reply(`Вы нажали кнопку: ${button.label}`);
