@@ -20,6 +20,8 @@ export function init() {
     db = new SQL.Database(new Uint8Array(buf));
   } else {
     db = new SQL.Database();
+    // enforce foreign key constraints
+    db.run('PRAGMA foreign_keys = ON;');
 
     addUserTable();
     addUserRolesTable();
@@ -27,6 +29,7 @@ export function init() {
     addEventsTable();
     addRegistrationsToEventsTable();
     addEventMessagesTable();
+    addReportsTable();
     
     fs.writeFileSync(DB_FILE, Buffer.from(db.export()));
   }
@@ -48,8 +51,8 @@ function addUserTable(){
       user_id INTEGER PRIMARY KEY,
       first_name TEXT,
       last_name TEXT,
-      univesity_id INTEGER,
-      drom_id INTEGER,
+      university_id INTEGER,
+      dorm_id INTEGER,
       room TEXT,
       policy_agreed INTEGER DEFAULT 0
     );`
@@ -117,6 +120,22 @@ function addEventMessagesTable(){
       FOREIGN KEY (event_id) REFERENCES events (event_id),
       FOREIGN KEY (user_id) REFERENCES users (user_id),
       FOREIGN KEY (creator_id) REFERENCES users (user_id)
+    );`
+  );
+}
+
+function addReportsTable(){
+  db.run(
+    `CREATE TABLE IF NOT EXISTS reports (
+      report_id INTEGER PRIMARY KEY,
+      user_id INTEGER,
+      time_create TEXT,
+      text TEXT,
+      img TEXT,
+      intruder TEXT,
+      intruder_room TEXT,
+      anonim INTEGER DEFAULT 0,
+      FOREIGN KEY (user_id) REFERENCES users (user_id)
     );`
   );
 }

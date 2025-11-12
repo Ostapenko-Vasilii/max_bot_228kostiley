@@ -1,7 +1,7 @@
 import { init, getDb, persist } from './init.js';
 init();
 
-export function saveUser(user_id, first_name, last_name, univesity_id, drom_id, room, policy_agreed) {
+export function saveUser(user_id, first_name, last_name, university_id, dorm_id, room, policy_agreed) {
   return new Promise((resolve, reject) => {
     try {
       const uid = Number.isFinite(Number(user_id)) ? Number(user_id) : null;
@@ -9,14 +9,14 @@ export function saveUser(user_id, first_name, last_name, univesity_id, drom_id, 
 
       const fn = first_name ? String(first_name).trim().slice(0, 255) : null;
       const ln = last_name ? String(last_name).trim().slice(0, 255) : null;
-      const uni = univesity_id ? String(univesity_id).trim().slice(0, 255) : null;
-      const dr = drom_id ? String(drom_id).trim().slice(0, 255) : null;
+  const uni = university_id ? String(university_id).trim().slice(0, 255) : null;
+  const dr = dorm_id ? String(dorm_id).trim().slice(0, 255) : null;
       const rm = room ? String(room).trim().slice(0, 100) : null;
       const policy = typeof policy_agreed === 'boolean' ? (policy_agreed ? 1 : 0)
                     : (policy_agreed === null || policy_agreed === undefined ? null : Number(policy_agreed) ? 1 : 0);
 
       const db = getDb();
-      const sql = 'INSERT OR REPLACE INTO users (user_id, first_name, last_name, univesity_id, drom_id, room, policy_agreed) VALUES (?, ?, ?, ?, ?, ?, ?)';
+  const sql = 'INSERT OR REPLACE INTO users (user_id, first_name, last_name, university_id, dorm_id, room, policy_agreed) VALUES (?, ?, ?, ?, ?, ?, ?)';
       db.run(sql, [uid, fn, ln, uni, dr, rm, policy]);
 
       try { persist(); } catch (e) { /* ignore persist errors */ }
@@ -41,7 +41,7 @@ export function getUserById(user_id) {
       if (uid === null) return reject(new Error('Invalid user_id'));
 
       const db = getDb();
-      const stmt = db.prepare('SELECT user_id, first_name, last_name, univesity_id, drom_id, room, policy_agreed FROM users WHERE user_id = ?');
+  const stmt = db.prepare('SELECT user_id, first_name, last_name, university_id, dorm_id, room, policy_agreed FROM users WHERE user_id = ?');
       stmt.bind([uid]);
       const row = stmt.step() ? stmt.get() : null;
       if (typeof stmt.free === 'function') stmt.free();
@@ -52,8 +52,8 @@ export function getUserById(user_id) {
         user_id: row[0],
         first_name: row[1],
         last_name: row[2],
-        univesity_id: row[3],
-        drom_id: row[4],
+        university_id: row[3],
+        dorm_id: row[4],
         room: row[5],
         policy_agreed: row[6]
       });
