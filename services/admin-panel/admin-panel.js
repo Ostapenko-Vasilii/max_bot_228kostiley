@@ -4,8 +4,8 @@ import { Keyboard } from '@maxhub/max-bot-api';
 
 export const adminPanelButtons = [
     { label: '📅 Создать мероприятие', payload: { command: 'admin_panel_create_event' } },
-    { label: '📋 Список мероприятий', payload: { command: 'admin_panel_list_events' } },
-    { label: '📦 Архив мероприятий', payload: { command: 'admin_panel_archive_events' } },
+    { label: '📋 Список мероприятий', payload: { command: 'admin_panel_show_events_active' } },
+    { label: '📦 Архив мероприятий', payload: { command: 'admin_panel_show_events_archived' } },
 ];
 const standartButtons = [
     { label: '🔙 Открыть меню', payload: { command: 'show_main_menu' } },

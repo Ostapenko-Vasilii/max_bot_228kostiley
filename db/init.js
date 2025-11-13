@@ -27,6 +27,7 @@ export function init() {
     addEventsTable();
     addRegistrationsToEventsTable();
     addEventMessagesTable();
+    addSettingsTable();
     
     fs.writeFileSync(DB_FILE, Buffer.from(db.export()));
   }
@@ -80,7 +81,8 @@ function addEventsTable(){
     `CREATE TABLE IF NOT EXISTS events (
       event_id INTEGER PRIMARY KEY,
       event_name TEXT,
-      event_date TEXT,
+      event_date TIME,
+      event_location TEXT,
       attachments TEXT,
       event_text TEXT,
       event_status INTEGER,
@@ -121,6 +123,15 @@ function addEventMessagesTable(){
   );
 }
 
-
+function addSettingsTable(){
+  db.run(
+    `CREATE TABLE IF NOT EXISTS users_settings (
+    user_id INTEGER PRIMARY KEY,
+    allow_new_events_notifications INTEGER DEFAULT 1,
+    allow_reminder_notifications INTEGER DEFAULT 1,
+    FOREIGN KEY (user_id) REFERENCES users (user_id)
+  );`
+  );
+}
 export { DB_FILE };
 export default db;
