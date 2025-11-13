@@ -3,6 +3,7 @@ import { saveUser } from '../db/users.js';
 import { addUserRoles } from '../db/roles.js';
 import { startBot } from '../services/start.js';
 import { addUserState } from '../db/states.js';
+import { addUserSettings } from '../db/settings.js';
 
 
 
@@ -129,6 +130,7 @@ async function finishRegistration(bot, ctx, user_id) {
   if (String(user_id) === process.env.ADMIN_USER_ID) {
     await addUserRoles(user_id, 3); // добавляем роль администратора
   }
+  await addUserSettings(user_id, { allow_new_events_notifications: 1, allow_reminder_notifications: 1 });
   await ctx.reply(`✅ Регистрация завершена! Спасибо, ${data.first_name}.`);
   delete userSessions[user_id]; // очищаем состояние
   await addUserState(user_id, null);
