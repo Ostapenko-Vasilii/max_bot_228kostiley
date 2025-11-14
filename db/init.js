@@ -28,6 +28,7 @@ export function init() {
     addRegistrationsToEventsTable();
     addEventMessagesTable();
     addSettingsTable();
+    addReportsTable();
     
     fs.writeFileSync(DB_FILE, Buffer.from(db.export()));
   }
@@ -131,6 +132,22 @@ function addSettingsTable(){
     allow_reminder_notifications INTEGER DEFAULT 1,
     FOREIGN KEY (user_id) REFERENCES users (user_id)
   );`
+  );
+}
+
+function addReportsTable(){
+  db.run(
+    `CREATE TABLE IF NOT EXISTS reports (
+      report_id INTEGER PRIMARY KEY,
+      user_id INTEGER,
+      time_create TEXT,
+      text TEXT,
+      attachments TEXT,
+      intruder TEXT,
+      intruder_room TEXT,
+      anonim INTEGER DEFAULT 0,
+      FOREIGN KEY (user_id) REFERENCES users (user_id)
+    );`
   );
 }
 export { DB_FILE };
