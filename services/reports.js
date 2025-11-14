@@ -1,16 +1,8 @@
 import { Keyboard } from '@maxhub/max-bot-api';
-import { listReports, createReport, getReportById, deleteReport } from '../db/reports.js';
+import { listReports, createReport, getReportById, deleteReport } from '../../second/max_bot_228kostiley/db/reports.js';
 import { getUserRoles } from '../db/roles.js';
 
-// Buttons for admin actions
-const adminButtons = [
-  { label: '📄 Просмотреть отчеты', payload: { command: 'admin_reports_list' } },
-  { label: '🗑️ Удалить отчет', payload: { command: 'admin_reports_delete' } },
-];
 
-const standardButtons = [
-  { label: '🔙 Открыть меню', payload: { command: 'show_main_menu' } },
-];
 
 export async function submitReport(ctx, reportData) {
   // reportData expected to contain: user_id, text, img, intruder, intruder_room, anonim
