@@ -149,3 +149,52 @@ export async function broadcastEventMessageToParticipants(bot, eventId, message 
   const sent = results.filter(Boolean).length;
   return { total: uniqueIds.length, sent };
 }
+
+export async function broadcastMessageToAllUsers(bot, message = {}) {
+  const db = getDb();
+  const stmt = db.prepare(`
+    SELECT u.user_id
+    FROM users u
+  `);
+
+  const ids = [];
+  while (stmt.step()) {
+    const row = stmt.get();
+    const userId = Number(row[0]);
+    if (Number.isInteger(userId) && userId > 0) ids.push(userId);
+  }
+  if (typeof stmt.free === 'function') stmt.free();
+
+  if (!ids.length) {
+    return { total: 0, sent: 0 };
+  }
+
+  const rawText = typeof message.text === 'string' ? message.text : '';
+  const trimmedText = rawText.trim();
+  const rawAttachments = Array.isArray(message.attachments) ? message.attachments : [];
+  const attachments = rawAttachments
+    .filter((item) => item && typeof item === 'object' && typeof item.type === 'string')
+    .map((item) => ({ ...item }));
+
+  if (!trimmedText && !attachments.length) {
+    throw new Error('Message must contain text or attachments');
+  }
+
+  const safeText = trimmedText || (attachments.length ? ' ' : '');
+
+  const results = await Promise.all(
+    ids.map(async (userId) => {
+      const ctx = createUserContext(bot, userId);
+      try {
+        await ctx.reply(safeText, { attachments });
+        return true;
+      } catch (err) {
+        console.error(`Failed to notify user ${userId}:`, err);
+        return false;
+      }
+    })
+  );
+
+  const sent = results.filter(Boolean).length;
+  return { total: ids.length, sent };
+}

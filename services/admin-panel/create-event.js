@@ -62,6 +62,12 @@ function isValidDateTime(dateStr) {
 }
 
 export async function handleCreateEventResponse(ctx, bot) {
+    const u_id = ctx.user.user_id;
+    const roles = await getUserRoles(u_id);
+    if (!Array.isArray(roles) || !roles.includes(3)) {
+        await ctx.reply('У вас нет прав для создания мероприятия.');
+        return;
+    }
     const user_id = ctx.user.user_id;
     const session = eventSessions[user_id];
     if (!session) return;

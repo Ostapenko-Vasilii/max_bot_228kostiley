@@ -63,3 +63,39 @@ export function getUserById(user_id) {
   });
 }
 
+export function getAllUsers() {
+  return new Promise((resolve, reject) => {
+    try {
+      const db = getDb();
+      let stmt;
+      try {
+        stmt = db.prepare(`
+            SELECT user_id, first_name, last_name, room
+            FROM users
+            ORDER BY user_id ASC
+        `);
+      } catch {
+        stmt = db.prepare(`
+            SELECT user_id, first_name, last_name, room_number
+            FROM users
+            ORDER BY user_id ASC
+        `);
+      }
+      const users = [];
+      while (stmt.step()) {
+        const row = stmt.get();
+        users.push({
+          user_id: Number(row[0]),
+          first_name: row[1] ?? '',
+          last_name: row[2] ?? '',
+          room: row[3] ?? null,
+        });
+      }
+      if (typeof stmt.free === 'function') stmt.free();
+      resolve(users);
+    } catch (err) {
+      reject(err);
+    }
+  });
+}
+

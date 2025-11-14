@@ -6,9 +6,7 @@ import { startBot } from '../services/start.js';
 import { startCreateEvent } from '../services/admin-panel/create-event.js';
 import { showEvent, updateEvent, registerUserToEvent, unregisterUserFromEvent } from '../services/events.js';
 import { showAdminActiveEvents, showAdminArchivedEvents, moveEventToArchive, restoreEventFromArchive, eventButtons as adminEventButtons, handleAdminEventButton, cancelEventEdit } from '../services/admin-panel/events-admin-view.js';
-import { getAdminState, clearAdminState } from '../db/statedb.js';
-import { updateEventField } from '../db/events.js';
-import { refreshAdminEventMessage } from '../services/admin-panel/events-admin-view.js';
+import { showManagePanel, managePanelButtons, startBroadcastToAll, startAssignRole, handleAssignRoleToggle, finishAssignRole, cancelAssignRole, viewAllUsers } from '../services/manage_panel/manage-panel.js'
 
 export async function setListeners(bot, startBotMs) {
     await setAdminPanelListener(bot, startBotMs);
@@ -18,6 +16,8 @@ export async function setListeners(bot, startBotMs) {
     handleEventResponse(bot, startBotMs);
     handleAdminEventManagement(bot, startBotMs);
     handleAdminEventButtons(bot, startBotMs);
+    handleManagePanelButtons(bot, startBotMs);
+    handleManagePanelRoleActions(bot, startBotMs);
 }
 
 
@@ -52,7 +52,10 @@ async function setMenuListener(bot, startBotMs) {
                     await showEvent(ctx, 0, bot);
                     return;
                 case 'menu_open_admin_panel':
-                    await showAdminPanel(ctx, bot);
+                    await showAdminPanel(ctx);
+                    return;
+                case 'menu_open_manage':
+                    await showManagePanel(ctx);
                     return;
                 default:
                     await ctx.reply(`Вы нажали кнопку: ${button.label}`);
@@ -153,5 +156,58 @@ function handleAdminEventButtons(bot, startBotMs) {
       if (!isNewMessage(startBotMs, upTs)) return;
       await handleAdminEventButton(ctx, button.payload.command, bot);
     });
+  });
+}
+
+function handleManagePanelButtons(bot, startBotMs) {
+  managePanelButtons.forEach((button) => {
+    bot.action(button.payload.command, async (ctx) => {
+      const upTs = ctx.update?.timestamp;
+      if (!isNewMessage(startBotMs, upTs)) return;
+      switch (button.payload.command) {
+        case 'manage_panel_assign_role':
+          await startAssignRole(ctx);
+          return;
+        case 'manage_panel_broadcast_all':
+          await startBroadcastToAll(ctx);
+          return;
+        case 'manage_panel_view_users':
+          await viewAllUsers(ctx);
+          return;
+        default:
+          return;
+      }
+    });
+  });
+}
+
+function handleManagePanelRoleActions(bot, startBotMs) {
+  const roleCommands = [
+    { command: 'manage_panel_toggle_role_1', roleId: 1 },
+    { command: 'manage_panel_toggle_role_2', roleId: 2 },
+    { command: 'manage_panel_toggle_role_3', roleId: 3 },
+    { command: 'manage_panel_toggle_role_4', roleId: 4 },
+    { command: 'manage_panel_toggle_role_5', roleId: 5 },
+    { command: 'manage_panel_toggle_role_6', roleId: 6 }
+  ];
+
+  roleCommands.forEach(({ command, roleId }) => {
+    bot.action(command, async (ctx) => {
+      const upTs = ctx.update?.timestamp;
+      if (!isNewMessage(startBotMs, upTs)) return;
+      await handleAssignRoleToggle(ctx, roleId);
+    });
+  });
+
+  bot.action('manage_panel_assign_finish', async (ctx) => {
+    const upTs = ctx.update?.timestamp;
+    if (!isNewMessage(startBotMs, upTs)) return;
+    await finishAssignRole(ctx);
+  });
+
+  bot.action('manage_panel_assign_cancel', async (ctx) => {
+    const upTs = ctx.update?.timestamp;
+    if (!isNewMessage(startBotMs, upTs)) return;
+    await cancelAssignRole(ctx);
   });
 }
