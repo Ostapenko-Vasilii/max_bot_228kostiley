@@ -3,7 +3,7 @@ import { handlePolicyResponse } from '../services/registration.js';
 import { userButtons, headmanButtons, adminButtons, responsibleButtons, supervisorButtons, foremanButtons } from '../services/menu.js';
 import { showAdminPanel, adminPanelButtons } from '../services/admin-panel/admin-panel.js';
 import { startBot } from '../services/start.js';
-import { startCreateEvent } from '../services/admin-panel/create-event.js';
+import { startCreateEvent, handleCreateEventCancel } from '../services/admin-panel/create-event.js';
 import { startCreateReport, handleReportAction } from '../services/create-report.js';
 import { showEvent, updateEvent, registerUserToEvent, unregisterUserFromEvent } from '../services/events.js';
 import { showAdminActiveEvents, showAdminArchivedEvents, moveEventToArchive, restoreEventFromArchive, eventButtons as adminEventButtons, handleAdminEventButton, cancelEventEdit } from '../services/admin-panel/events-admin-view.js';
@@ -12,6 +12,13 @@ import { Keyboard } from '@maxhub/max-bot-api';
 import { updateEventField } from '../db/events.js';
 import { refreshAdminEventMessage } from '../services/admin-panel/events-admin-view.js';
 import { submitReport, adminShowReports, adminGetReport, adminDeleteReport } from '../services/reports.js';
+import { showManagePanel, managePanelButtons, startBroadcastToAll, startAssignRole, handleAssignRoleToggle, finishAssignRole, cancelAssignRole, viewAllUsers } from '../services/manage_panel/manage-panel.js'
+import { startEditInfo, sendUsefulInfo } from '../services/manage_panel/manage-panel.js';
+import { showSettings, startSettingsChangeFirstName, startSettingsChangeLastName, startSettingsChangeRoom, toggleSettingsNotifications } from '../services/settings.js';
+import { showPlaceManagementMenu, beginPlaceWizard } from '../services/manage_panel/place-booking.js';
+import { showBookingEntry, showBookingDayMenu, handleBookingPlaceSelect, handleBookingDaySelect, handleBookingSlotSelect } from '../services/booking.js';
+import { showDutySchedule, showAllDutySchedules, startDutyScheduleEdit } from '../services/duty.js';
+
 
 export async function setListeners(bot, startBotMs) {
     await setAdminPanelListener(bot, startBotMs);
@@ -19,9 +26,14 @@ export async function setListeners(bot, startBotMs) {
     await setShowMainMenuListener(bot, startBotMs);
     await setPolicyKeyboardListener(bot, startBotMs);
     await setReportListeners(bot, startBotMs);
+    await setCreateEventCancelListener(bot, startBotMs);
     handleEventResponse(bot, startBotMs);
     handleAdminEventManagement(bot, startBotMs);
     handleAdminEventButtons(bot, startBotMs);
+    handleManagePanelButtons(bot, startBotMs);
+    handleManagePanelRoleActions(bot, startBotMs);
+    handleSettingsActions(bot, startBotMs);
+    handleBookingActions(bot, startBotMs);
 }
 
 
@@ -62,11 +74,32 @@ async function setMenuListener(bot, startBotMs) {
                   // Start the multi-step report creation flow
                   await startCreateReport(ctx, bot);
                   return;
+                case 'menu_open_useful_info':
+                    await sendUsefulInfo(ctx);
+                    return;
                 case 'menu_open_admin_panel':
-                    await showAdminPanel(ctx, bot);
+                    await showAdminPanel(ctx);
+                    return;
+                case 'menu_open_manage':
+                    await showManagePanel(ctx);
                     return;
                 case 'menu_open_view_complaints':
                     await adminShowReports(ctx);
+                    return;
+                case 'menu_open_settings':
+                    await showSettings(ctx);
+                    return;
+                case 'menu_open_booking':
+                    await showBookingEntry(ctx);
+                    return;
+                case 'menu_open_duty':
+                    await showDutySchedule(ctx);
+                    return;
+                case 'menu_open_view_schedule':
+                    await showAllDutySchedules(ctx);
+                    return;
+                case 'manage_events':
+                    await startDutyScheduleEdit(ctx);
                     return;
                 default:
                     await ctx.reply(`Вы нажали кнопку: ${button.label}`);
@@ -80,16 +113,6 @@ async function setMenuListener(bot, startBotMs) {
 async function setReportListeners(bot, startBotMs) {
   // Register dynamic report action handlers (view/delete). Some SDKs accept RegExp in bot.action.
   try {
-    // view report callbacks like: admin_report_view:123
-    // bot.action('menu_open_create_complaint', async (ctx) => {
-    //   const upTs = ctx.update?.timestamp;
-    //   if (!isNewMessage(startBotMs, upTs)) return;
-    //   const payload = ctx.update?.payload?.command || ctx.update?.callback_query?.data || '';
-    //   const m = String(payload).match(/^admin_report_view:(\d+)$/);
-    //   if (!m) return;
-    //   const id = Number(m[1]);
-    //   await adminGetReport(ctx, id);
-    // });
 
     bot.action('menu_open_create_complaint', async (ctx) => {
       const upTs = ctx.update?.timestamp;
@@ -418,5 +441,164 @@ function handleAdminEventButtons(bot, startBotMs) {
       if (!isNewMessage(startBotMs, upTs)) return;
       await handleAdminEventButton(ctx, button.payload.command, bot);
     });
+  });
+}
+
+function handleManagePanelButtons(bot, startBotMs) {
+  managePanelButtons.forEach((button) => {
+    bot.action(button.payload.command, async (ctx) => {
+      const upTs = ctx.update?.timestamp;
+      if (!isNewMessage(startBotMs, upTs)) return;
+      switch (button.payload.command) {
+        case 'manage_panel_assign_role':
+          await startAssignRole(ctx);
+          return;
+        case 'manage_panel_broadcast_all':
+          await startBroadcastToAll(ctx);
+          return;
+        case 'manage_panel_edit_info':
+          await startEditInfo(ctx);
+          return;
+        case 'manage_panel_view_users':
+          await viewAllUsers(ctx);
+          return;
+        case 'manage_panel_places':
+          await showPlaceManagementMenu(ctx);
+          return;
+        default:
+          return;
+      }
+    });
+  });
+
+  bot.action('manage_places_add_new', async (ctx) => {
+    const upTs = ctx.update?.timestamp;
+    if (!isNewMessage(startBotMs, upTs)) return;
+    await beginPlaceWizard(ctx, null);
+  });
+
+  bot.action(/^manage_places_edit_(\d+)$/, async (ctx) => {
+    const upTs = ctx.update?.timestamp;
+    if (!isNewMessage(startBotMs, upTs)) return;
+    const payload = ctx.update?.payload?.command || ctx.update?.callback_query?.data || ctx.update?.callback?.payload || '';
+    const match = String(payload).match(/^manage_places_edit_(\d+)$/);
+    if (!match) return;
+    await beginPlaceWizard(ctx, Number(match[1]));
+  });
+
+  bot.action('manage_places_refresh', async (ctx) => {
+    const upTs = ctx.update?.timestamp;
+    if (!isNewMessage(startBotMs, upTs)) return;
+    await showPlaceManagementMenu(ctx);
+  });
+}
+
+function handleManagePanelRoleActions(bot, startBotMs) {
+  const roleCommands = [
+    { command: 'manage_panel_toggle_role_1', roleId: 1 },
+    { command: 'manage_panel_toggle_role_2', roleId: 2 },
+    { command: 'manage_panel_toggle_role_3', roleId: 3 },
+    { command: 'manage_panel_toggle_role_4', roleId: 4 },
+    { command: 'manage_panel_toggle_role_5', roleId: 5 },
+    { command: 'manage_panel_toggle_role_6', roleId: 6 }
+  ];
+
+  roleCommands.forEach(({ command, roleId }) => {
+    bot.action(command, async (ctx) => {
+      const upTs = ctx.update?.timestamp;
+      if (!isNewMessage(startBotMs, upTs)) return;
+      await handleAssignRoleToggle(ctx, roleId);
+    });
+  });
+
+  bot.action('manage_panel_assign_finish', async (ctx) => {
+    const upTs = ctx.update?.timestamp;
+    if (!isNewMessage(startBotMs, upTs)) return;
+    await finishAssignRole(ctx);
+  });
+
+  bot.action('manage_panel_assign_cancel', async (ctx) => {
+    const upTs = ctx.update?.timestamp;
+    if (!isNewMessage(startBotMs, upTs)) return;
+    await cancelAssignRole(ctx);
+  });
+}
+
+function handleSettingsActions(bot, startBotMs) {
+	bot.action('settings_change_first_name', async (ctx) => {
+		const upTs = ctx.update?.timestamp;
+		if (!isNewMessage(startBotMs, upTs)) return;
+		await startSettingsChangeFirstName(ctx);
+	});
+
+	bot.action('settings_change_last_name', async (ctx) => {
+		const upTs = ctx.update?.timestamp;
+		if (!isNewMessage(startBotMs, upTs)) return;
+		await startSettingsChangeLastName(ctx);
+	});
+
+	bot.action('settings_change_room', async (ctx) => {
+		const upTs = ctx.update?.timestamp;
+		if (!isNewMessage(startBotMs, upTs)) return;
+		await startSettingsChangeRoom(ctx);
+	});
+
+	bot.action('settings_toggle_event_notifications', async (ctx) => {
+		const upTs = ctx.update?.timestamp;
+		if (!isNewMessage(startBotMs, upTs)) return;
+		await toggleSettingsNotifications(ctx);
+	});
+}
+
+function handleBookingActions(bot, startBotMs) {
+	bot.action(/^booking_place_(\d+)$/, async (ctx) => {
+		const upTs = ctx.update?.timestamp;
+		if (!isNewMessage(startBotMs, upTs)) return;
+		const payload = ctx.update?.payload?.command || ctx.update?.callback_query?.data || ctx.update?.callback?.payload || '';
+		const match = String(payload).match(/^booking_place_(\d+)$/);
+		if (!match) return;
+		await handleBookingPlaceSelect(ctx, Number(match[1]));
+	});
+
+	bot.action(/^booking_day_(\d+)_(\d{4}-\d{2}-\d{2})$/, async (ctx) => {
+		const upTs = ctx.update?.timestamp;
+		if (!isNewMessage(startBotMs, upTs)) return;
+		const payload = ctx.update?.payload?.command || ctx.update?.callback_query?.data || ctx.update?.callback?.payload || '';
+		const match = String(payload).match(/^booking_day_(\d+)_(\d{4}-\d{2}-\d{2})$/);
+		if (!match) return;
+		await handleBookingDaySelect(ctx, Number(match[1]), match[2]);
+	});
+
+	bot.action(/^booking_slot_(\d+)_(\d+)$/, async (ctx) => {
+		const upTs = ctx.update?.timestamp;
+		if (!isNewMessage(startBotMs, upTs)) return;
+		const payload = ctx.update?.payload?.command || ctx.update?.callback_query?.data || ctx.update?.callback?.payload || '';
+		const match = String(payload).match(/^booking_slot_(\d+)_(\d+)$/);
+		if (!match) return;
+		await handleBookingSlotSelect(ctx, Number(match[1]), Number(match[2]));
+	});
+
+	bot.action('booking_back_to_places', async (ctx) => {
+		const upTs = ctx.update?.timestamp;
+		if (!isNewMessage(startBotMs, upTs)) return;
+		await showBookingEntry(ctx, { forceList: true });
+	});
+
+	bot.action(/^booking_day_menu_(\d+)$/, async (ctx) => {
+		const upTs = ctx.update?.timestamp;
+		if (!isNewMessage(startBotMs, upTs)) return;
+		const payload = ctx.update?.payload?.command || ctx.update?.callback_query?.data || ctx.update?.callback?.payload || '';
+		const match = String(payload).match(/^booking_day_menu_(\d+)$/);
+		if (!match) return;
+		await showBookingDayMenu(ctx, Number(match[1]));
+	});
+}
+
+async function setCreateEventCancelListener(bot, startBotMs) {
+  bot.action('create_event_cancel', async (ctx) => {
+    const upTs = ctx.update?.timestamp;
+    if (!isNewMessage(startBotMs, upTs)) return;
+    try { if (typeof ctx.answerCallbackQuery === 'function') await ctx.answerCallbackQuery(); } catch (e) { /* ignore */ }
+    await handleCreateEventCancel(ctx);
   });
 }

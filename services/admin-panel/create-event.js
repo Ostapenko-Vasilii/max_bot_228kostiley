@@ -2,6 +2,8 @@ import { addUserState } from '../../db/states.js';
 import { getUserRoles } from '../../db/roles.js';
 import { createEvent, getLatestEventIdByCreator, findEventIdByDetails } from '../../db/events.js';
 import { notifyUsersAboutNewEvent } from '../notifications.js';
+import { Keyboard } from '@maxhub/max-bot-api';
+
 const createEventSteps = [
   'event_name',
   'event_date_time',
@@ -9,6 +11,10 @@ const createEventSteps = [
   'event_message',
 ];
 const eventSessions = {};
+
+const cancelKeyboard = Keyboard.inlineKeyboard([
+  [Keyboard.button.callback('❌ Отменить создание', 'create_event_cancel')],
+]);
 
 export async function startCreateEvent(ctx, bot) {
     const user_id = ctx.user.user_id;
@@ -34,16 +40,16 @@ async function askNextQuestion(ctx, user_id) {
     const step = createEventSteps[session.step];
     switch (step) {
         case 'event_name':
-            await ctx.reply('Введите название мероприятия:');
+            await ctx.reply('Введите название мероприятия:', { attachments: [cancelKeyboard] });
             break;
         case 'event_date_time':
-            await ctx.reply('Введите дату и время мероприятия (YYYY-MM-DD HH:mm):');
+            await ctx.reply('Введите дату и время мероприятия (YYYY-MM-DD HH:mm):', { attachments: [cancelKeyboard] });
             break;
         case 'event_location':
-            await ctx.reply('Введите место проведения мероприятия:');
+            await ctx.reply('Введите место проведения мероприятия:', { attachments: [cancelKeyboard] });
             break;
         case 'event_message':
-            await ctx.reply('Перешлите пост мероприятия:');
+            await ctx.reply('Перешлите пост мероприятия:', { attachments: [cancelKeyboard] });
             break;
     }
 }
@@ -62,6 +68,12 @@ function isValidDateTime(dateStr) {
 }
 
 export async function handleCreateEventResponse(ctx, bot) {
+    const u_id = ctx.user.user_id;
+    const roles = await getUserRoles(u_id);
+    if (!Array.isArray(roles) || !roles.includes(3)) {
+        await ctx.reply('У вас нет прав для создания мероприятия.');
+        return;
+    }
     const user_id = ctx.user.user_id;
     const session = eventSessions[user_id];
     if (!session) return;
@@ -160,4 +172,16 @@ async function finishCreateEvent(ctx, user_id) {
     }
     delete eventSessions[user_id];
     await addUserState(user_id, null);
+}
+
+export async function handleCreateEventCancel(ctx) {
+  const user_id = ctx.user?.user_id;
+  if (!user_id) return;
+  if (!eventSessions[user_id]) {
+    await ctx.reply('Создание мероприятия уже завершено.');
+    return;
+  }
+  delete eventSessions[user_id];
+  await addUserState(user_id, null);
+  await ctx.reply('Создание мероприятия отменено.');
 }

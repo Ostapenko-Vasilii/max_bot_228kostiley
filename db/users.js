@@ -63,3 +63,75 @@ export function getUserById(user_id) {
   });
 }
 
+export function getAllUsers() {
+  return new Promise((resolve, reject) => {
+    try {
+      const db = getDb();
+      let stmt;
+      try {
+        stmt = db.prepare(`
+            SELECT user_id, first_name, last_name, room
+            FROM users
+            ORDER BY user_id ASC
+        `);
+      } catch {
+        stmt = db.prepare(`
+            SELECT user_id, first_name, last_name, room_number
+            FROM users
+            ORDER BY user_id ASC
+        `);
+      }
+      const users = [];
+      while (stmt.step()) {
+        const row = stmt.get();
+        users.push({
+          user_id: Number(row[0]),
+          first_name: row[1] ?? '',
+          last_name: row[2] ?? '',
+          room: row[3] ?? null,
+        });
+      }
+      if (typeof stmt.free === 'function') stmt.free();
+      resolve(users);
+    } catch (err) {
+      reject(err);
+    }
+  });
+}
+
+export function updateUserFields(user_id, fields = {}) {
+  return new Promise((resolve, reject) => {
+    try {
+      const uid = Number.isFinite(Number(user_id)) ? Number(user_id) : null;
+      if (uid === null) return reject(new Error('Invalid user_id'));
+
+      const allowed = {
+        first_name: (v) => v == null ? null : (String(v).trim().slice(0, 255) || null),
+        last_name: (v) => v == null ? null : (String(v).trim().slice(0, 255) || null),
+        room: (v) => v == null ? null : (String(v).trim().slice(0, 100) || null),
+      };
+
+      const assignments = [];
+      const values = [];
+      for (const [field, normalizer] of Object.entries(allowed)) {
+        if (!Object.prototype.hasOwnProperty.call(fields, field)) continue;
+        assignments.push(`${field} = ?`);
+        values.push(normalizer(fields[field]));
+      }
+
+      if (!assignments.length) return resolve({ changes: 0 });
+
+      const db = getDb();
+      db.run(`UPDATE users SET ${assignments.join(', ')} WHERE user_id = ?`, [...values, uid]);
+
+      try { persist(); } catch { /* ignore persist errors */ }
+
+      const changesRes = db.exec('SELECT changes() AS changes');
+      const changes = changesRes?.[0]?.values?.[0]?.[0] ?? 0;
+      resolve({ changes: Number(changes) || 0 });
+    } catch (err) {
+      reject(err);
+    }
+  });
+}
+

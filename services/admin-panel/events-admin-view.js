@@ -2,6 +2,7 @@ import { Keyboard } from '@maxhub/max-bot-api';
 import { getEventsByStatus, getEventsWithStatusNot, updateEventStatus, getEventById, getEventParticipants } from '../../db/events.js';
 import { addEventMessage, getEventByMid } from '../../db/event-messages.js';
 import { setAdminState, clearAdminState, getAdminState } from '../../db/statedb.js';
+import { getUserRoles } from '../../db/roles.js';
 import { notifyEventParticipants } from '../notifications.js';
 
 export const eventButtons = [
@@ -144,6 +145,9 @@ export async function showAdminArchivedEvents(ctx) {
 
 export async function moveEventToArchive(ctx, messageId) {
   try {
+    if(!await checkPermissions(ctx)) {
+        return;
+    }
     const mid = messageId ? String(messageId).trim() : '';
     if (!mid) return;
 
@@ -169,6 +173,9 @@ export async function moveEventToArchive(ctx, messageId) {
 
 export async function restoreEventFromArchive(ctx, messageId) {
   try {
+    if(!await checkPermissions(ctx)) {
+        return;
+    }
     const mid = messageId ? String(messageId).trim() : '';
     if (!mid) return;
 
@@ -310,6 +317,9 @@ async function startBroadcastToParticipants(ctx, event) {
 
 export async function cancelEventEdit(ctx, bot) {
   try {
+    if(!await checkPermissions(ctx)) {
+        return;
+    }
     const userId = Number(ctx.user?.user_id);
     if (!Number.isInteger(userId)) return;
 
@@ -353,6 +363,9 @@ export async function cancelEventEdit(ctx, bot) {
 
 export async function handleAdminEventButton(ctx, command, bot) {
   try {
+    if(!await checkPermissions(ctx)) {
+        return;
+    }
     const midRaw = ctx.message?.body?.mid;
     const mid = midRaw ? String(midRaw).trim() : '';
     if (!mid) {
@@ -384,4 +397,15 @@ export async function handleAdminEventButton(ctx, command, bot) {
     console.error('handleAdminEventButton error:', err);
     await ctx.reply('Ошибка при обработке действия мероприятия.');
   }
+}
+
+
+async function checkPermissions(ctx) {
+      const user_id = ctx.user.user_id;
+      const roles = await getUserRoles(user_id);
+      if (!Array.isArray(roles) || !roles.includes(3)) {
+          await ctx.reply('У вас нет прав для создания мероприятия.');
+          return false;
+      }
+      return true;
 }

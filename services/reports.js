@@ -60,7 +60,7 @@ export async function adminShowReports(ctx, room = null) {
   try {
     let roles = await getUserRoles(ctx.user.user_id);
     if (!Array.isArray(roles)) roles = [];
-    if (!roles.includes(3)) {
+    if (!roles.includes(4)) {
       ctx.reply('У вас нет доступа 😧');
       return;
     }
