@@ -72,8 +72,9 @@ async function askNextQuestion(ctx, user_id, bot) {
             Keyboard.button.callback('✅ Согласен', 'policy_yes'),
           ],
         ]);
-        await ctx.reply('Вы согласны с политикой обработки данных?', {
+        await ctx.reply('Вы согласны с [политикой обработки данных](https://raw.githubusercontent.com/Ostapenko-Vasilii/max_bot_228kostiley/refs/heads/main/politics.txt)?', {
           attachments: [keyboard],
+          format: 'markdown',
         });
         break;
     }

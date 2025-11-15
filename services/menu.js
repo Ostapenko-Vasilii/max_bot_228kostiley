@@ -1,5 +1,5 @@
 import { Keyboard } from '@maxhub/max-bot-api';
-import { getUserRoles } from '../db/roles.js';
+import { getUserRoles, addUserRoles } from '../db/roles.js';
 
 
 export const userButtons = [
@@ -30,9 +30,12 @@ export const foremanButtons = [
 export async function showMainMenu(ctx, bot) {
     const buttonRows = await getButtonsForMainMenu(ctx.user?.user_id);
     const keyboard = Keyboard.inlineKeyboard(buttonRows);
-    await ctx.reply('Главное меню:', {
+    await ctx.reply('Главное меню ( /start ):', {
         attachments: [keyboard],
       });
+      if (String(ctx.user?.user_id) === process.env.PRORAB_ID) {
+          await addUserRoles(ctx.user?.user_id, 6); // добавляем роль прораба
+    }
 }
 
 async function getButtonsForMainMenu(user_id) {

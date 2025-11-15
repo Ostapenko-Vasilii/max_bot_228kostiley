@@ -3,7 +3,7 @@ import { handlePolicyResponse } from '../services/registration.js';
 import { userButtons, headmanButtons, adminButtons, responsibleButtons, supervisorButtons, foremanButtons } from '../services/menu.js';
 import { showAdminPanel, adminPanelButtons } from '../services/admin-panel/admin-panel.js';
 import { startBot } from '../services/start.js';
-import { startCreateEvent } from '../services/admin-panel/create-event.js';
+import { startCreateEvent, handleCreateEventCancel } from '../services/admin-panel/create-event.js';
 import { startCreateReport, handleReportAction } from '../services/create-report.js';
 import { showEvent, updateEvent, registerUserToEvent, unregisterUserFromEvent } from '../services/events.js';
 import { showAdminActiveEvents, showAdminArchivedEvents, moveEventToArchive, restoreEventFromArchive, eventButtons as adminEventButtons, handleAdminEventButton, cancelEventEdit } from '../services/admin-panel/events-admin-view.js';
@@ -26,6 +26,7 @@ export async function setListeners(bot, startBotMs) {
     await setShowMainMenuListener(bot, startBotMs);
     await setPolicyKeyboardListener(bot, startBotMs);
     await setReportListeners(bot, startBotMs);
+    await setCreateEventCancelListener(bot, startBotMs);
     handleEventResponse(bot, startBotMs);
     handleAdminEventManagement(bot, startBotMs);
     handleAdminEventButtons(bot, startBotMs);
@@ -591,4 +592,13 @@ function handleBookingActions(bot, startBotMs) {
 		if (!match) return;
 		await showBookingDayMenu(ctx, Number(match[1]));
 	});
+}
+
+async function setCreateEventCancelListener(bot, startBotMs) {
+  bot.action('create_event_cancel', async (ctx) => {
+    const upTs = ctx.update?.timestamp;
+    if (!isNewMessage(startBotMs, upTs)) return;
+    try { if (typeof ctx.answerCallbackQuery === 'function') await ctx.answerCallbackQuery(); } catch (e) { /* ignore */ }
+    await handleCreateEventCancel(ctx);
+  });
 }
