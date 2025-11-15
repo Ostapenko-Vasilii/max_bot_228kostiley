@@ -50,3 +50,5 @@ desktop.ini
 *.pem
 *.key
 *.crt
+states.sqlite
+states.sqlite

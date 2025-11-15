@@ -29,6 +29,9 @@ export function init() {
     addEventMessagesTable();
     addSettingsTable();
     addReportsTable();
+    addDutySchedulesTable();
+    addBookingPlacesTable();
+    addBookingReservationsTable();
     
     fs.writeFileSync(DB_FILE, Buffer.from(db.export()));
   }
@@ -150,5 +153,46 @@ function addReportsTable(){
     );`
   );
 }
+
+function addDutySchedulesTable(){
+  db.run(
+    `CREATE TABLE IF NOT EXISTS duty_schedules (
+      floor INTEGER PRIMARY KEY,
+      text TEXT,
+      attachments TEXT,
+      updated_at TEXT
+    );`
+  );
+}
+
+function addBookingPlacesTable(){
+  db.run(
+    `CREATE TABLE IF NOT EXISTS booking_places (
+      place_id INTEGER PRIMARY KEY,
+      name TEXT NOT NULL,
+      work_hours TEXT NOT NULL,
+      interval_minutes INTEGER NOT NULL,
+      per_day_limit INTEGER NOT NULL,
+      per_week_limit INTEGER NOT NULL,
+      created_at TEXT,
+      updated_at TEXT
+    );`
+  );
+}
+
+function addBookingReservationsTable(){
+  db.run(
+    `CREATE TABLE IF NOT EXISTS booking_reservations (
+      reservation_id INTEGER PRIMARY KEY,
+      place_id INTEGER NOT NULL,
+      user_id INTEGER NOT NULL,
+      start_time TEXT NOT NULL,
+      end_time TEXT NOT NULL,
+      created_at TEXT,
+      FOREIGN KEY (place_id) REFERENCES booking_places(place_id)
+    );`
+  );
+}
+
 export { DB_FILE };
 export default db;

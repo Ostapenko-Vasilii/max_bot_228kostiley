@@ -12,7 +12,10 @@ import { updateEventField, getEventById } from './db/events.js';
 import { refreshAdminEventMessage } from './services/admin-panel/events-admin-view.js';
 import { broadcastEventMessageToParticipants, broadcastMessageToAllUsers } from './services/notifications.js';
 import { processAssignRoleUserIdInput } from './services/manage_panel/manage-panel.js';
-import { adminShowReports } from './services/reports.js';
+import { processEditInfoInput } from './services/manage_panel/manage-panel.js';
+import { handleSettingsUpdateResponse } from './services/settings.js';
+import { handleDutyScheduleFloorInput, handleDutyScheduleMessage } from './services/duty.js';
+import { handlePlaceWizardMessage } from './services/manage_panel/place-booking.js';
 
 const startBotMs = Date.now();
 
@@ -130,6 +133,15 @@ bot.on('message_created', async (ctx) => {
         }
         return;
       }
+      case 'edit_info_wait_message' : {
+        try {
+          await processEditInfoInput(ctx);
+        } catch (err) {
+          console.error('edit_info_wait_message error:', err);
+          await ctx.reply('Не удалось сохранить информацию. Попробуйте снова.');
+        }
+        return;
+      }
       case 'edit_event_field': {
         let payload = null;
         try {
@@ -184,6 +196,10 @@ bot.on('message_created', async (ctx) => {
         await ctx.reply('Используйте кнопки, чтобы дать или убрать роли, либо нажмите «Готово».');
         return;
       }
+      case 'manage_place_wizard': {
+        await handlePlaceWizardMessage(ctx);
+        return;
+      }
       default:
         break;
     }
@@ -197,6 +213,15 @@ bot.on('message_created', async (ctx) => {
         break;
       case 'creating_report':
         await handleCreateReportResponse(ctx, bot);
+        break;
+      case 'settings_update_profile':
+        await handleSettingsUpdateResponse(ctx);
+        break;
+      case 'duty_schedule_select_floor':
+        await handleDutyScheduleFloorInput(ctx);
+        break;
+      case 'duty_schedule_wait_message':
+        await handleDutyScheduleMessage(ctx);
         break;
       default:
         return;

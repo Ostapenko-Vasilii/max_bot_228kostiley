@@ -2,12 +2,14 @@ import { getUserRoles, addUserRoles, removeUserRole } from '../../db/roles.js';
 import { Keyboard } from '@maxhub/max-bot-api';
 import { setAdminState, getAdminState, clearAdminState } from '../../db/statedb.js';
 import { getUserById, getAllUsers } from '../../db/users.js';
+import { saveUsefulInfo, getUsefulInfo } from '../../db/useful-info.js';
+import { showPlaceManagementMenu } from './place-booking.js';
 
 const ROLE_ITEMS = [
     { id: 1, label: 'user (1)' },
     { id: 2, label: 'дежурный (2)' },
     { id: 3, label: 'админ (3)' },
-    { id: 4, label: 'отвецтвенный (4)' },
+    { id: 4, label: 'ответственный (4)' },
     { id: 5, label: 'главный староста (5)' },
     { id: 6, label: 'прораб (6)' },
 ];
@@ -48,6 +50,7 @@ export const managePanelButtons = [
     { label: '📨 рассылка всем', payload: { command: 'manage_panel_broadcast_all' } },
     { label: '✏️ изменить информацию', payload: { command: 'manage_panel_edit_info' } },
     { label: '👥 посмотреть пользователей', payload: { command: 'manage_panel_view_users' } },
+    { label: '🏟 места для бронирования', payload: { command: 'manage_panel_places' } },
 ];
 
 const standartButtons = [
@@ -311,5 +314,94 @@ export async function viewAllUsers(ctx) {
     }
     if (buffer.trim().length) {
         await ctx.reply(buffer.trimEnd());
+    }
+}
+
+export async function startEditInfo(ctx) {
+    const adminId = Number(ctx.user?.user_id);
+    if (!Number.isInteger(adminId)) return;
+    if (!await ensureForemanAccess(ctx)) return;
+
+    const keyboard = Keyboard.inlineKeyboard([
+        [Keyboard.button.callback('❌ Отмена', 'manage_panel_edit_info_cancel')]
+    ]);
+
+    await ctx.reply('Отправьте текст и вложения с информацией для пользователей.', {
+        attachments: [keyboard]
+    });
+
+    await setAdminState(adminId, 'edit_info_wait_message', '{}');
+}
+
+function extractMessageAttachments(ctx) {
+    const bodyAttachments = Array.isArray(ctx.message?.body?.attachments) ? ctx.message.body.attachments : [];
+    const messageAttachments = Array.isArray(ctx.message?.attachments) ? ctx.message.attachments : [];
+    return [...bodyAttachments, ...messageAttachments].filter((item) => item && typeof item === 'object');
+}
+
+export async function processEditInfoInput(ctx) {
+    const adminId = Number(ctx.user?.user_id);
+    if (!Number.isInteger(adminId)) return false;
+    if (!await ensureForemanAccess(ctx)) return false;
+
+    const state = await getAdminState(adminId);
+    if (state?.action !== 'edit_info_wait_message') return false;
+
+    const text = typeof ctx.message?.body?.text === 'string' ? ctx.message.body.text.trim() : '';
+    const attachments = extractMessageAttachments(ctx);
+
+    if (!text.length && attachments.length === 0) {
+        await ctx.reply('Сообщение должно содержать текст или вложения.');
+        return true;
+    }
+
+    try {
+        await saveUsefulInfo({ text, attachments });
+        await clearAdminState(adminId);
+        await ctx.reply('Информация обновлена.');
+    } catch (err) {
+        console.error('processEditInfoInput save error:', err);
+        await ctx.reply('Не удалось сохранить информацию.');
+    }
+
+    return true;
+}
+
+export async function cancelEditInfo(ctx) {
+    const adminId = Number(ctx.user?.user_id);
+    if (!Number.isInteger(adminId)) return;
+
+    const state = await getAdminState(adminId);
+    if (state?.action !== 'edit_info_wait_message') {
+        await ctx.reply('Нет активного процесса изменения информации.');
+        return;
+    }
+
+    await clearAdminState(adminId);
+    await ctx.reply('Изменение информации отменено.');
+}
+
+export async function sendUsefulInfo(ctx) {
+    let info;
+    try {
+        info = await getUsefulInfo();
+    } catch (err) {
+        console.error('sendUsefulInfo fetch error:', err);
+        await ctx.reply('Не удалось получить информацию.');
+        return;
+    }
+
+    const text = typeof info?.text === 'string' ? info.text.trim() : '';
+    const attachments = Array.isArray(info?.attachments) ? info.attachments : [];
+
+    if (!text.length && attachments.length === 0) {
+        await ctx.reply('Информация пока не добавлена.');
+        return;
+    }
+
+    if (attachments.length) {
+        await ctx.reply(text.length ? text : ' ', { attachments });
+    } else {
+        await ctx.reply(text);
     }
 }

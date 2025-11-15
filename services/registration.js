@@ -36,39 +36,51 @@ export async function registerUser(bot, ctx) {
 // Вопрос пользователю в зависимости от шага
 async function askNextQuestion(ctx, user_id, bot) {
   try {
-  const step = registrationSteps[userSessions[user_id].step];
+    const session = userSessions[user_id];
+    if (!session) return;
 
-  switch (step) {
-    case 'first_name':
-      await ctx.reply('Введите ваше имя:');
-      break;
-    case 'last_name':
-      await ctx.reply('Введите вашу фамилию:');
-      break;
-    case 'university_id':
-      await ctx.reply('Введите ID университета:');
-      break;
-    case 'dorm_id':
-      await ctx.reply('Введите номер общежития:');
-      break;
-    case 'room':
-      await ctx.reply('Введите номер комнаты:');
-      break;
-    case 'policy_agreed':
-      const keyboard = Keyboard.inlineKeyboard([
-        [
-          Keyboard.button.callback('✅ Согласен', 'policy_yes'),
-        ],
-      ]);
-      await ctx.reply('Вы согласны с политикой обработки данных?', {
-        attachments: [keyboard],
-      });
-      break;
+    const step = registrationSteps[session.step];
+
+    if (step === 'university_id' || step === 'dorm_id') {
+      session.data[step] = '1';
+      session.step++;
+      if (session.step < registrationSteps.length) {
+        await askNextQuestion(ctx, user_id, bot);
+      }
+      return;
+    }
+
+    switch (step) {
+      case 'first_name':
+        await ctx.reply('Введите ваше имя:');
+        break;
+      case 'last_name':
+        await ctx.reply('Введите вашу фамилию:');
+        break;
+      case 'university_id':
+        await ctx.reply('Введите ID университета:');
+        break;
+      case 'dorm_id':
+        await ctx.reply('Введите номер общежития:');
+        break;
+      case 'room':
+        await ctx.reply('Введите номер комнаты:');
+        break;
+      case 'policy_agreed':
+        const keyboard = Keyboard.inlineKeyboard([
+          [
+            Keyboard.button.callback('✅ Согласен', 'policy_yes'),
+          ],
+        ]);
+        await ctx.reply('Вы согласны с политикой обработки данных?', {
+          attachments: [keyboard],
+        });
+        break;
+    }
+  } catch (error) {
+    console.error('Error in askNextQuestion:', error);
+    ctx.reply('Пожалуйста, попробуйте заново пройти регистрацию, пропишите /start');
   }
-} catch (error) {
-  console.error('Error in askNextQuestion:', error);
-  ctx.reply('Пожалуйста, попробуйте заново пройти регистрацию, пропишите /start');
-}
 }
 
 // Обработка текстовых ответов
@@ -127,8 +139,8 @@ async function finishRegistration(bot, ctx, user_id) {
   );
 
   await addUserRoles(user_id, 1);
-  if (String(user_id) === process.env.ADMIN_USER_ID) {
-    await addUserRoles(user_id, 3); // добавляем роль администратора
+  if (String(user_id) === process.env.PRORAB_ID) {
+    await addUserRoles(user_id, 6); // добавляем роль прораба
   }
   await addUserSettings(user_id, { allow_new_events_notifications: 1, allow_reminder_notifications: 1 });
   await ctx.reply(`✅ Регистрация завершена! Спасибо, ${data.first_name}.`);

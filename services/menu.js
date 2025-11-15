@@ -5,13 +5,13 @@ import { getUserRoles } from '../db/roles.js';
 export const userButtons = [
     { label: '📅 Мероприятия', payload: { command: 'menu_open_events' } },
     { label: '📝 Жалоба', payload: { command: 'menu_open_create_complaint' } },
-    { label: '🏢 Бронь места', payload: { command: 'menu_open_rent_places' } },
+    { label: '🧹 Дежурство', payload: { command: 'menu_open_duty' } },
+    { label: '🏢 Бронь места', payload: { command: 'menu_open_booking' } },
     { label: 'ℹ️ Информация', payload: { command: 'menu_open_useful_info' } },
     { label: '⚙️ Настройки', payload: { command: 'menu_open_settings' } },
-    { label: '📋 Просмотр жалоб', payload: { command: 'menu_open_view_complaints' } }
 ];
 export const headmanButtons = [
-    { label: 'Отчёт о дежурстве', payload: { command: 'manage_events' } },
+    { label: '📓 задать дежурства', payload: { command: 'manage_events' } },
 ];
 export const adminButtons = [
     { label: '🛠 Админ панель', payload: { command: 'menu_open_admin_panel' } },
@@ -20,8 +20,7 @@ export const responsibleButtons = [
     { label: '📋 Просмотр жалоб', payload: { command: 'menu_open_view_complaints' } },
 ];
 export const supervisorButtons = [
-    { label: '📋 просмотр отчётов', payload: { command: 'menu_open_view_reports' } },
-    { label: '📅 график дежурства', payload: { command: 'menu_open_view_schedule' } },
+    { label: '📖 графики дежурств', payload: { command: 'menu_open_view_schedule' } },
 ];
 export const foremanButtons = [
     { label: '🔧 Прораб-панель', payload: { command: 'menu_open_manage' } },

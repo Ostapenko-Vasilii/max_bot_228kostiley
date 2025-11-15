@@ -4,7 +4,6 @@ import { showMainMenu } from '../services/menu.js';
 
 export async function startBot(bot, ctx) {
   try {
-    await ctx.reply('bot_started');
     const user = await getUserById(ctx.user?.user_id);
     if (user === null) {
       try {

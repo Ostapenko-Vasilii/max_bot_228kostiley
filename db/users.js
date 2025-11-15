@@ -99,3 +99,39 @@ export function getAllUsers() {
   });
 }
 
+export function updateUserFields(user_id, fields = {}) {
+  return new Promise((resolve, reject) => {
+    try {
+      const uid = Number.isFinite(Number(user_id)) ? Number(user_id) : null;
+      if (uid === null) return reject(new Error('Invalid user_id'));
+
+      const allowed = {
+        first_name: (v) => v == null ? null : (String(v).trim().slice(0, 255) || null),
+        last_name: (v) => v == null ? null : (String(v).trim().slice(0, 255) || null),
+        room: (v) => v == null ? null : (String(v).trim().slice(0, 100) || null),
+      };
+
+      const assignments = [];
+      const values = [];
+      for (const [field, normalizer] of Object.entries(allowed)) {
+        if (!Object.prototype.hasOwnProperty.call(fields, field)) continue;
+        assignments.push(`${field} = ?`);
+        values.push(normalizer(fields[field]));
+      }
+
+      if (!assignments.length) return resolve({ changes: 0 });
+
+      const db = getDb();
+      db.run(`UPDATE users SET ${assignments.join(', ')} WHERE user_id = ?`, [...values, uid]);
+
+      try { persist(); } catch { /* ignore persist errors */ }
+
+      const changesRes = db.exec('SELECT changes() AS changes');
+      const changes = changesRes?.[0]?.values?.[0]?.[0] ?? 0;
+      resolve({ changes: Number(changes) || 0 });
+    } catch (err) {
+      reject(err);
+    }
+  });
+}
+
