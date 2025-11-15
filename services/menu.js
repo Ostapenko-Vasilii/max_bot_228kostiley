@@ -8,6 +8,7 @@ export const userButtons = [
     { label: '🏢 Бронь места', payload: { command: 'menu_open_rent_places' } },
     { label: 'ℹ️ Информация', payload: { command: 'menu_open_useful_info' } },
     { label: '⚙️ Настройки', payload: { command: 'menu_open_settings' } },
+    { label: '📋 Просмотр жалоб', payload: { command: 'menu_open_view_complaints' } }
 ];
 export const headmanButtons = [
     { label: 'Отчёт о дежурстве', payload: { command: 'manage_events' } },

@@ -6,11 +6,13 @@ import { setListeners } from './utils/listeners.js';
 import { startBot } from './services/start.js';
 import { getUserState } from './db/states.js';
 import { handleCreateEventResponse } from './services/admin-panel/create-event.js';
+import { handleCreateReportResponse } from './services/create-report.js';
 import { getAdminState, clearAdminState } from './db/statedb.js';
 import { updateEventField, getEventById } from './db/events.js';
 import { refreshAdminEventMessage } from './services/admin-panel/events-admin-view.js';
 import { broadcastEventMessageToParticipants, broadcastMessageToAllUsers } from './services/notifications.js';
 import { processAssignRoleUserIdInput } from './services/manage_panel/manage-panel.js';
+import { adminShowReports } from './services/reports.js';
 
 const startBotMs = Date.now();
 
@@ -192,6 +194,9 @@ bot.on('message_created', async (ctx) => {
         break;
       case 'creating_event':
         await handleCreateEventResponse(ctx, bot);
+        break;
+      case 'creating_report':
+        await handleCreateReportResponse(ctx, bot);
         break;
       default:
         return;
