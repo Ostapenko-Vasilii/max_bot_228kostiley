@@ -1,0 +1,11 @@
+Project: maxbot
+Technology: Node.js (JavaScript)
+Main dependencies equivalent:
+
+nodejs>=18.0.0
+npm>=9.0.0
+
+Package equivalents:
+@maxhub/max-bot-api==0.2.1
+dotenv==17.2.3
+sql.js==1.13.0
